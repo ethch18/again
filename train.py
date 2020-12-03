@@ -4,6 +4,7 @@ from typing import Union
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchvision.utils import save_image
 from tqdm import tqdm
 
 import data
@@ -17,11 +18,12 @@ parser.add_argument("--beta1", type=float, default=0.5)
 parser.add_argument("--beta2", type=float, default=0.999)
 parser.add_argument("--latent-dim", type=int, default=100)
 parser.add_argument("--sample-interval", type=int, default=400)
+parser.add_argument("--checkpoint-interval", type=int, default=5)
 parser.add_argument("--data-path", type=str, default="data/")
 parser.add_argument("--dataset", type=str, choices=["mnist", "cifar10"])
 parser.add_argument("--normalize-data", type=bool, action="store_true")
 parser.add_argument("--image-size", type=str)
-parser.add_argument("--output-path", type=str, default="output/")
+parser.add_argument("--output-path", type=str, default="output")
 parser.add_argument("--cuda", type=bool, action="store_true")
 parser.add_argument("--classifier-path", type=str, default="pretrained.pt")
 parser.add_argument("--target-class", type=int)
@@ -42,20 +44,44 @@ generator.apply(models.weights_init)
 discriminator.apply(models.weights_init)
 
 # Data
-dataclass = data.MNISTDataLoader(
-) if args.dataset == "mnist" else data.CIFAR10DataLoader()
+dataclass = (
+    data.MNISTDataLoader()
+    if args.dataset == "mnist"
+    else data.CIFAR10DataLoader()
+)
 dataloader = torch.utils.data.DataLoader(
     dataclass.get_dataset(
-        args.data_path, normalize=args.normalize_data, resize=args.image_size),
+        args.data_path, normalize=args.normalize_data, resize=args.image_size
+    ),
     batch_size=args.batch_size,
     shuffle=True,
 )
 
 # Optimizers
 generator_optim = torch.optim.Adam(
-    generator.parameters(), lr=args.lr, betas=(args.beta1, args.beta2))
+    generator.parameters(), lr=args.lr, betas=(args.beta1, args.beta2)
+)
 discriminator_optim = torch.optim.Adam(
-    discriminator.parameters(), lr=args.lr, betas=(args.beta1, args.beta2))
+    discriminator.parameters(), lr=args.lr, betas=(args.beta1, args.beta2)
+)
+
+
+def sample_image(n_row, batches_done):
+    """Saves a grid of generated digits ranging from 0 to n_classes"""
+    # Sample noise
+    z = torch.randn(n_row ** 2, args.latent_dim)
+    # Get labels ranging from 0 to n_classes for n rows
+    labels = torch.LongTensor(
+        [num for _ in range(n_row) for num in range(n_row)]
+    )
+    gen_imgs = generator(z, labels)
+    save_image(
+        gen_imgs.data,
+        f"{args.output_path}/image_{batches_done}.png",
+        nrow=n_row,
+        normalize=True,
+    )
+
 
 # Training Loop
 for epoch in range(args.n_epochs):
@@ -96,7 +122,30 @@ for epoch in range(args.n_epochs):
         gener_loss.backward()
         generator_optim.step()
 
-        # TODO: print some useful information here, maybe do a periodic
-        # sample-evaluate
+        if i % args.sample_interval == 0:
+            print(
+                f"[Epoch {epoch}] [Batch {i}] [D Loss: {discrim_loss.item()}] "
+                f"[G Loss Full: {gener_loss.item()}] "
+                f"[G Loss D: {discrim_generator_loss.item()}] "
+                f"[G Loss C: {classifier_loss.item()}]"
+            )
+            sample_image(n_row=10, batches_done=(epoch * len(dataloader) + i))
 
-# TODO: save state dict
+    if epoch % args.checkpoint_interval == 0:
+        torch.save(
+            generator.state_dict(),
+            f"{args.output_path}/generator_epoch_{epoch}.pth",
+        )
+        torch.save(
+            discriminator.state_dict(),
+            f"{args.output_path}/discriminator_epoch_{epoch}.pth",
+        )
+
+torch.save(
+    generator.state_dict(),
+    f"{args.output_path}/generator_final.pth",
+)
+torch.save(
+    discriminator.state_dict(),
+    f"{args.output_path}/discriminator_final.pth",
+)
