@@ -27,7 +27,6 @@ parser.add_argument("--normalize-data", action="store_true")
 parser.add_argument("--image-size", type=str)
 parser.add_argument("--output-path", type=str, default="output")
 parser.add_argument("--cuda", action="store_true")
-parser.add_argument("--classifier-path", type=str, default="pretrained.pt")
 parser.add_argument("--target-class", type=int)
 parser.add_argument('--resume', default=None, type=str, help='Resuming model path')
 args = parser.parse_args()
@@ -43,7 +42,7 @@ classification_loss = nn.CrossEntropyLoss()
 # Models
 model_pack = models.Models("mnist", "dcgan", args.resume)
 model_pack.choose_device(device)
-generator,  = model_pack.model_list["generator"]
+generator = model_pack.model_list["generator"]
 discriminator = model_pack.model_list["generator"]
 classifier = model_pack.model_list["classifier"]
 
