@@ -3,6 +3,17 @@ import torch
 import torch.nn as nn
 
 num_gpu = 1 if torch.cuda.is_available() else 0
+
+def weights_init(m):
+    """
+    Custom weight init that everybody seems to do
+    """
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        torch.nn.init.normal(m.weight, 0.0, 0.02)
+    elif classname.find('BatchNorm2d') != -1:
+        torch.nn.init.normal(m.weight, 1.0, 0.02)
+        torch.nn.init.constant(m.bias, 0.0)
 class Models():
     def __init__(self, dateset_name, model_name, path=None):
         self.model_list = {}
@@ -28,6 +39,7 @@ class Models():
             raise NotImplementedError
         self.model_list["classifier"] = pretrained_classifier()
         self.model_list["classifier"].load_state_dict(torch.load(f'./pretrained/{dateset_name}/classifier.pth'))
+        self.model_list["classifier"].requires_grad = False
     
     def eval(self):
         for m in self.model_list:
@@ -67,17 +79,3 @@ class Models():
     def choose_device(self, device):
         for m in self.model_list:
             self.model_list[m].to(device)
-
-
-    def weights_init(self, m):
-        """
-        Custom weight init that everybody seems to do
-        """
-        for m in self.model_list:
-            if m != "classifier":
-                classname = m.__class__.__name__
-                if classname.find('Conv') != -1:
-                    torch.nn.init.normal_(m.weight, 0.0, 0.02)
-                elif classname.find('BatchNorm') != -1:
-                    torch.nn.init.normal_(m.weight, 1.0, 0.02)
-                    torch.nn.init.zeros_(m.bias)
