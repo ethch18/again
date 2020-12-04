@@ -1,4 +1,5 @@
 import argparse
+import os
 from typing import Union
 
 import torch
@@ -9,6 +10,7 @@ from tqdm import tqdm
 
 import data
 import models
+import util
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--n-epochs", type=int, default=200)
@@ -21,27 +23,29 @@ parser.add_argument("--sample-interval", type=int, default=400)
 parser.add_argument("--checkpoint-interval", type=int, default=5)
 parser.add_argument("--data-path", type=str, default="data/")
 parser.add_argument("--dataset", type=str, choices=["mnist", "cifar10"])
-parser.add_argument("--normalize-data", type=bool, action="store_true")
+parser.add_argument("--normalize-data", action="store_true")
 parser.add_argument("--image-size", type=str)
 parser.add_argument("--output-path", type=str, default="output")
-parser.add_argument("--cuda", type=bool, action="store_true")
+parser.add_argument("--cuda", action="store_true")
 parser.add_argument("--classifier-path", type=str, default="pretrained.pt")
 parser.add_argument("--target-class", type=int)
+parser.add_argument('--resume', default=None, type=str, help='Resuming model path')
 args = parser.parse_args()
 
 device = "cuda" if args.cuda and torch.cuda.is_available() else "cpu"
+
+args.output_path = util.get_output_folder(args.output_path, args.dataset)
 
 # Loss
 generation_loss = nn.BCELoss()
 classification_loss = nn.CrossEntropyLoss()
 
 # Models
-generator = models.Generator().to(device)
-discriminator = models.Discriminator().to(device)
-classifier = models.load_pretrained_classifier(args.classifier_path).to(device)
-
-generator.apply(models.weights_init)
-discriminator.apply(models.weights_init)
+model_pack = models.Models("mnist", "dcgan", args.resume)
+model_pack.choose_device(device)
+generator,  = model_pack.model_list["generator"]
+discriminator = model_pack.model_list["generator"]
+classifier = model_pack.model_list["classifier"]
 
 # Data
 dataclass = (
@@ -132,20 +136,8 @@ for epoch in range(args.n_epochs):
             sample_image(n_row=10, batches_done=(epoch * len(dataloader) + i))
 
     if epoch % args.checkpoint_interval == 0:
-        torch.save(
-            generator.state_dict(),
-            f"{args.output_path}/generator_epoch_{epoch}.pth",
-        )
-        torch.save(
-            discriminator.state_dict(),
-            f"{args.output_path}/discriminator_epoch_{epoch}.pth",
-        )
+        save_path = os.path.join(f"{args.output_path}", f"{epoch}")
+        os.makedirs(save_path, exist_ok=True)
+        model_pack.save_weights(save_path, device)
 
-torch.save(
-    generator.state_dict(),
-    f"{args.output_path}/generator_final.pth",
-)
-torch.save(
-    discriminator.state_dict(),
-    f"{args.output_path}/discriminator_final.pth",
-)
+model_pack.save_weights(f"{args.output_path}/final")
