@@ -77,7 +77,7 @@ def one_hot_encode(labels):
 def sample_image(n_row, batches_done):
     """Saves a grid of generated digits ranging from 0 to n_classes"""
     # Sample noise
-    z = torch.randn(n_row ** 2, args.latent_dim)
+    z = torch.randn(n_row ** 2, args.latent_dim).to(device)
     # Get labels ranging from 0 to n_classes for n rows
     labels = torch.LongTensor(
         [num for _ in range(n_row) for num in range(n_row)]
