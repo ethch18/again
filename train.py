@@ -31,7 +31,7 @@ parser.add_argument("--target-class", type=int)
 parser.add_argument('--resume', default=None, type=str, help='Resuming model path')
 args = parser.parse_args()
 
-device = "cuda" if args.cuda and torch.cuda.is_available() else "cpu"
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 args.output_path = util.get_output_folder(args.output_path, args.dataset)
 
@@ -72,7 +72,7 @@ def one_hot_encode(labels):
     labels_size = labels.size()[0]
     one_hot = torch.zeros(labels_size, 10) # 10: number of class
     one_hot[torch.arange(labels_size), labels] = 1.
-    return one_hot.cuda()
+    return one_hot.to(device)
 
 def sample_image(n_row, batches_done):
     """Saves a grid of generated digits ranging from 0 to n_classes"""
@@ -95,15 +95,14 @@ def sample_image(n_row, batches_done):
 # Training Loop
 for epoch in range(args.n_epochs):
     for i, (imgs, labels) in tqdm(enumerate(dataloader)):
-        if args.cuda:
-            imgs = imgs.cuda()
-            labels = labels.cuda()
+        imgs = imgs.to(device)
+        labels = labels.to(device)
         batch_size = imgs.size(0)
-        valid = torch.ones(batch_size).cuda()
-        fake = torch.zeros(batch_size).cuda()
+        valid = torch.ones(batch_size).to(device)
+        fake = torch.zeros(batch_size).to(device)
 
         # Generate fake images according to the real labels
-        z = torch.randn(batch_size, args.latent_dim).cuda()
+        z = torch.randn(batch_size, args.latent_dim).to(device)
         one_hot = one_hot_encode(labels)
         generated_images = generator(z, one_hot)
 
