@@ -54,7 +54,7 @@ dataclass = (
 )
 dataloader = torch.utils.data.DataLoader(
     dataclass.get_dataset(
-        args.data_path, normalize=args.normalize_data, resize=args.image_size
+        args.data_path, normalize=args.normalize_data, resize=int(args.image_size)
     ),
     batch_size=args.batch_size,
     shuffle=True,
