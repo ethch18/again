@@ -40,7 +40,7 @@ generation_loss = nn.BCELoss()
 classification_loss = nn.CrossEntropyLoss()
 
 # Models
-model_pack = models.Models("mnist", "dcgan", args.resume)
+model_pack = models.Models(args.dataset, "dcgan", args.resume)
 model_pack.choose_device(device)
 generator = model_pack.model_list["generator"]
 discriminator = model_pack.model_list["generator"]
