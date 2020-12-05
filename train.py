@@ -40,10 +40,10 @@ generation_loss = nn.BCELoss()
 classification_loss = nn.CrossEntropyLoss()
 
 # Models
-model_pack = models.Models(args.dataset, "dcgan", args.resume)
+model_pack = models.Models(args.dataset, "dcgan", args.latent_dim, args.resume)
 model_pack.choose_device(device)
 generator = model_pack.model_list["generator"]
-discriminator = model_pack.model_list["generator"]
+discriminator = model_pack.model_list["discriminator"]
 classifier = model_pack.model_list["classifier"]
 
 # Data
@@ -54,7 +54,7 @@ dataclass = (
 )
 dataloader = torch.utils.data.DataLoader(
     dataclass.get_dataset(
-        args.data_path, normalize=args.normalize_data, resize=args.image_size
+        args.data_path, normalize=args.normalize_data, resize=int(args.image_size)
     ),
     batch_size=args.batch_size,
     shuffle=True,
@@ -68,6 +68,11 @@ discriminator_optim = torch.optim.Adam(
     discriminator.parameters(), lr=args.lr, betas=(args.beta1, args.beta2)
 )
 
+def one_hot_encode(labels):
+    labels_size = labels.size()[0]
+    one_hot = torch.zeros(labels_size, 10) # 10: number of class
+    one_hot[torch.arange(labels_size), labels] = 1.
+    return one_hot
 
 def sample_image(n_row, batches_done):
     """Saves a grid of generated digits ranging from 0 to n_classes"""
@@ -77,6 +82,7 @@ def sample_image(n_row, batches_done):
     labels = torch.LongTensor(
         [num for _ in range(n_row) for num in range(n_row)]
     )
+    labels = one_hot_encode(labels)
     gen_imgs = generator(z, labels)
     save_image(
         gen_imgs.data,
@@ -95,15 +101,16 @@ for epoch in range(args.n_epochs):
 
         # Generate fake images according to the real labels
         z = torch.randn(batch_size, args.latent_dim)
-        generated_images = generator(z, labels)
+        one_hot = one_hot_encode(labels)
+        generated_images = generator(z, one_hot)
 
         # Train Discriminator
         discriminator_optim.zero_grad()
-        discrim_real = discriminator(imgs, labels)
-        discrim_real_loss = generation_loss(discrim_real, valid)
+        discrim_real = discriminator(imgs, one_hot)
+        discrim_real_loss = generation_loss(discrim_real.squeeze(), valid)
 
-        discrim_fake = discriminator(generated_images.detach(), labels)
-        discrim_fake_loss = generation_loss(discrim_fake, fake)
+        discrim_fake = discriminator(generated_images.detach(), one_hot)
+        discrim_fake_loss = generation_loss(discrim_fake.squeeze(), fake)
 
         discrim_loss = (discrim_real_loss + discrim_fake_loss) / 2
         discrim_loss.backward()
@@ -111,9 +118,10 @@ for epoch in range(args.n_epochs):
 
         # Train Generator
         generator_optim.zero_grad()
-        discrim_generator = discriminator(generated_images, labels)
-        discrim_generator_loss = generation_loss(discrim_generator, valid)
+        discrim_generator = discriminator(generated_images, one_hot)
+        discrim_generator_loss = generation_loss(discrim_generator.squeeze(), valid)
 
+        print(generated_images.shape)
         classifier_logits = classifier(generated_images)
         if args.target_class:
             target = args.target_class * torch.ones(batch_size)

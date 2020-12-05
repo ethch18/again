@@ -15,25 +15,29 @@ def weights_init(m):
         torch.nn.init.normal_(m.weight, 1.0, 0.02)
         torch.nn.init.zeros_(m.bias)
 class Models():
-    def __init__(self, dateset_name, model_name, path=None):
+    def __init__(self, dateset_name, model_name, latent_dim, path=None):
         self.model_list = {}
 
-        self.import_model(dateset_name, model_name)
+        self.import_model(dateset_name, model_name, latent_dim)
         if path == None:
-            path = os.path.join("./pretrained/", f"{dateset_name}")
-        self.load_weights(path)
+            self.model_list["generator"].apply(weights_init)
+            self.model_list["discriminator"].apply(weights_init)
+        else:
+            # path = os.path.join("./pretrained/", f"{dateset_name}")
+            self.load_weights(path)
 
-    def import_model(self, dateset_name, model_name):
+    def import_model(self, dateset_name, model_name, latent_dim):
         if dateset_name == "mnist":
             from references.csinva.mnist_classifier.lenet import LeNet5 as pretrained_classifier
-            from references.csinva.mnist_dcgan.dcgan import Discriminator, Generator
+            from references.malzantot.conditional_dcgan import ModelD as Discriminator
+            from references.malzantot.conditional_dcgan import ModelG as Generator
         else: # for CIFAR
             # TODO: add cifar
             raise NotImplementedError
 
         if model_name == "dcgan":
-            self.model_list["generator"] = Generator(num_gpu)
-            self.model_list["discriminator"] = Discriminator(num_gpu)
+            self.model_list["generator"] = Generator(latent_dim)
+            self.model_list["discriminator"] = Discriminator()
         else: # vae
             # TODO: add cifar
             raise NotImplementedError
