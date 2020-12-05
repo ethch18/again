@@ -72,7 +72,7 @@ def one_hot_encode(labels):
     labels_size = labels.size()[0]
     one_hot = torch.zeros(labels_size, 10) # 10: number of class
     one_hot[torch.arange(labels_size), labels] = 1.
-    return one_hot
+    return one_hot.cuda()
 
 def sample_image(n_row, batches_done):
     """Saves a grid of generated digits ranging from 0 to n_classes"""
@@ -95,6 +95,9 @@ def sample_image(n_row, batches_done):
 # Training Loop
 for epoch in range(args.n_epochs):
     for i, (imgs, labels) in tqdm(enumerate(dataloader)):
+        if args.cuda:
+            imgs = imgs.cuda()
+            labels = labels.cuda()
         batch_size = imgs.size(0)
         valid = torch.ones(batch_size)
         fake = torch.zeros(batch_size)
