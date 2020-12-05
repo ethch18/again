@@ -45,7 +45,7 @@ class ModelD(nn.Module):
         x = self.fc1(x)
         x = F.relu(x)
         x = self.fc2(x)
-        return F.sigmoid(x)
+        return torch.sigmoid(x)
 
 class ModelG(nn.Module):
     def __init__(self, z_dim):
@@ -71,7 +71,7 @@ class ModelG(nn.Module):
         x = self.bn2(x)
         x = F.relu(x)
         x = self.deconv2(x)
-        x = F.sigmoid(x)
+        x = torch.sigmoid(x)
         return x
         
 
