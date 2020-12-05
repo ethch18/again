@@ -99,11 +99,11 @@ for epoch in range(args.n_epochs):
             imgs = imgs.cuda()
             labels = labels.cuda()
         batch_size = imgs.size(0)
-        valid = torch.ones(batch_size)
-        fake = torch.zeros(batch_size)
+        valid = torch.ones(batch_size).cuda()
+        fake = torch.zeros(batch_size).cuda()
 
         # Generate fake images according to the real labels
-        z = torch.randn(batch_size, args.latent_dim)
+        z = torch.randn(batch_size, args.latent_dim).cuda()
         one_hot = one_hot_encode(labels)
         generated_images = generator(z, one_hot)
 
