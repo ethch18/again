@@ -121,7 +121,6 @@ for epoch in range(args.n_epochs):
         discrim_generator = discriminator(generated_images, one_hot)
         discrim_generator_loss = generation_loss(discrim_generator.squeeze(), valid)
 
-        print(generated_images.shape)
         classifier_logits = classifier(generated_images)
         if args.target_class:
             target = args.target_class * torch.ones(batch_size)
