@@ -18,6 +18,7 @@ parser.add_argument("--batch_size", type=int, default=64)
 parser.add_argument("--lr", type=float, default=0.0002)
 parser.add_argument("--beta1", type=float, default=0.5)
 parser.add_argument("--beta2", type=float, default=0.999)
+parser.add_argument("--classifier-lambda", type=int)
 parser.add_argument("--latent-dim", type=int, default=100)
 parser.add_argument("--sample-interval", type=int, default=400)
 parser.add_argument("--checkpoint-interval", type=int, default=5)
@@ -28,7 +29,9 @@ parser.add_argument("--image-size", type=str)
 parser.add_argument("--output-path", type=str, default="output")
 parser.add_argument("--cuda", action="store_true")
 parser.add_argument("--target-class", type=int)
-parser.add_argument('--resume', default=None, type=str, help='Resuming model path')
+parser.add_argument(
+    "--resume", default=None, type=str, help="Resuming model path"
+)
 args = parser.parse_args()
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -40,11 +43,16 @@ generation_loss = nn.BCELoss()
 classification_loss = nn.CrossEntropyLoss()
 
 # Models
-model_pack = models.Models(args.dataset, "dcgan", args.latent_dim, args.resume)
+model_pack = models.Models(
+    args.dataset, "dcgan_teeyo", args.latent_dim, args.resume
+)
 model_pack.choose_device(device)
 generator = model_pack.model_list["generator"]
 discriminator = model_pack.model_list["discriminator"]
 classifier = model_pack.model_list["classifier"]
+
+generator.apply(models.weights_init)
+discriminator.apply(models.weights_init)
 
 # Data
 dataclass = (
@@ -54,7 +62,9 @@ dataclass = (
 )
 dataloader = torch.utils.data.DataLoader(
     dataclass.get_dataset(
-        args.data_path, normalize=args.normalize_data, resize=int(args.image_size)
+        args.data_path,
+        normalize=args.normalize_data,
+        resize=int(args.image_size),
     ),
     batch_size=args.batch_size,
     shuffle=True,
@@ -68,11 +78,13 @@ discriminator_optim = torch.optim.Adam(
     discriminator.parameters(), lr=args.lr, betas=(args.beta1, args.beta2)
 )
 
+
 def one_hot_encode(labels):
     labels_size = labels.size()[0]
-    one_hot = torch.zeros(labels_size, 10) # 10: number of class
-    one_hot[torch.arange(labels_size), labels] = 1.
+    one_hot = torch.zeros(labels_size, 10)  # 10: number of class
+    one_hot[torch.arange(labels_size), labels] = 1.0
     return one_hot.to(device)
+
 
 def sample_image(n_row, batches_done):
     """Saves a grid of generated digits ranging from 0 to n_classes"""
@@ -114,23 +126,30 @@ for epoch in range(args.n_epochs):
         discrim_fake = discriminator(generated_images.detach(), one_hot)
         discrim_fake_loss = generation_loss(discrim_fake.squeeze(), fake)
 
-        discrim_loss = (discrim_real_loss + discrim_fake_loss) / 2
+        discrim_loss = discrim_real_loss + discrim_fake_loss
+        # discrim_loss = (discrim_real_loss + discrim_fake_loss) / 2
         discrim_loss.backward()
         discriminator_optim.step()
 
         # Train Generator
         generator_optim.zero_grad()
         discrim_generator = discriminator(generated_images, one_hot)
-        discrim_generator_loss = generation_loss(discrim_generator.squeeze(), valid)
+        discrim_generator_loss = generation_loss(
+            discrim_generator.squeeze(), valid
+        )
 
-        classifier_logits = classifier(generated_images)
-        if args.target_class:
-            target = args.target_class * torch.ones(batch_size)
-            classifier_loss = classification_loss(classifier_logits, target)
-        else:
-            classifier_loss = -classification_loss(classifier_logits, labels)
+        # classifier_logits = classifier(generated_images)
+        # if args.target_class:
+        #     target = args.target_class * torch.ones(batch_size)
+        #     classifier_loss = classification_loss(classifier_logits, target)
+        # else:
+        #     classifier_loss = -classification_loss(classifier_logits, labels)
 
-        gener_loss = (discrim_generator_loss + classifier_loss) / 2
+        # gener_loss = (discrim_generator_loss + classifier_loss) / 2
+        # gener_loss = (
+        #     discrim_generator_loss + args.classifier_lambda * classifier_loss
+        # )
+        gener_loss = discrim_generator_loss
         gener_loss.backward()
         generator_optim.step()
 
@@ -139,7 +158,7 @@ for epoch in range(args.n_epochs):
                 f"[Epoch {epoch}] [Batch {i}] [D Loss: {discrim_loss.item()}] "
                 f"[G Loss Full: {gener_loss.item()}] "
                 f"[G Loss D: {discrim_generator_loss.item()}] "
-                f"[G Loss C: {classifier_loss.item()}]"
+                # f"[G Loss C: {classifier_loss.item()}]"
             )
             sample_image(n_row=10, batches_done=(epoch * len(dataloader) + i))
 
