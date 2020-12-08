@@ -41,6 +41,8 @@ class Models:
             from references.malzantot.conditional_dcgan import (
                 ModelG as Generator,
             )
+
+            channels = 1
         else:  # for CIFAR
             # TODO: add cifar
             raise NotImplementedError
@@ -49,8 +51,12 @@ class Models:
             self.model_list["generator"] = Generator(latent_dim)
             self.model_list["discriminator"] = Discriminator()
         elif model_name == "dcgan_teeyo":
-            self.model_list["generator"] = TeeyoGenerator()
-            self.model_list["discriminator"] = TeeyoDiscriminator()
+            self.model_list["generator"] = TeeyoGenerator(
+                channels=channels, latent_dim=latent_dim
+            )
+            self.model_list["discriminator"] = TeeyoDiscriminator(
+                channels=channels
+            )
         else:  # vae
             # TODO: add cifar
             raise NotImplementedError
@@ -103,9 +109,9 @@ class Models:
 
 
 class TeeyoGenerator(nn.Module):
-    def __init__(self, *, channels, dim=128):
+    def __init__(self, *, channels, dim=128, latent_dim=100):
         super(TeeyoGenerator, self).__init__()
-        self.deconv1_1 = nn.ConvTranspose2d(100, dim * 2, 4, 1, 0)
+        self.deconv1_1 = nn.ConvTranspose2d(latent_dim, dim * 2, 4, 1, 0)
         self.deconv1_1_bn = nn.BatchNorm2d(dim * 2)
         self.deconv1_2 = nn.ConvTranspose2d(10, dim * 2, 4, 1, 0)
         self.deconv1_2_bn = nn.BatchNorm2d(dim * 2)

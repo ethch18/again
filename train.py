@@ -51,8 +51,9 @@ generator = model_pack.model_list["generator"]
 discriminator = model_pack.model_list["discriminator"]
 classifier = model_pack.model_list["classifier"]
 
-generator.apply(models.weights_init)
-discriminator.apply(models.weights_init)
+# this happens in models.init
+# generator.apply(models.weights_init)
+# discriminator.apply(models.weights_init)
 
 # Data
 dataclass = (
@@ -154,13 +155,16 @@ for epoch in range(args.n_epochs):
         generator_optim.step()
 
         if i % args.sample_interval == 0:
-            print(
-                f"[Epoch {epoch}] [Batch {i}] [D Loss: {discrim_loss.item()}] "
-                f"[G Loss Full: {gener_loss.item()}] "
-                f"[G Loss D: {discrim_generator_loss.item()}] "
-                # f"[G Loss C: {classifier_loss.item()}]"
-            )
-            sample_image(n_row=10, batches_done=(epoch * len(dataloader) + i))
+            with torch.no_grad():
+                print(
+                    f"[Epoch {epoch}] [Batch {i}] [D Loss: {discrim_loss.item()}] "
+                    f"[G Loss Full: {gener_loss.item()}] "
+                    f"[G Loss D: {discrim_generator_loss.item()}] "
+                    # f"[G Loss C: {classifier_loss.item()}]"
+                )
+                sample_image(
+                    n_row=10, batches_done=(epoch * len(dataloader) + i)
+                )
 
     if epoch % args.checkpoint_interval == 0:
         save_path = os.path.join(f"{args.output_path}", f"{epoch}")
