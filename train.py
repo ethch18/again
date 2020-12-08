@@ -2,15 +2,14 @@ import argparse
 import os
 from typing import Union
 
+import data
+import models
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import util
 from torchvision.utils import save_image
 from tqdm import tqdm
-
-import data
-import models
-import util
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--n-epochs", type=int, default=200)
@@ -37,6 +36,7 @@ args = parser.parse_args()
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 args.output_path = util.get_output_folder(args.output_path, args.dataset)
+args.image_size = int(args.image_size) if args.image_size is not None else None
 
 # Loss
 generation_loss = nn.BCELoss()
@@ -65,7 +65,7 @@ dataloader = torch.utils.data.DataLoader(
     dataclass.get_dataset(
         args.data_path,
         normalize=args.normalize_data,
-        resize=int(args.image_size),
+        resize=args.image_size,
     ),
     batch_size=args.batch_size,
     shuffle=True,
@@ -82,15 +82,20 @@ discriminator_optim = torch.optim.Adam(
 
 def one_hot_encode(labels):
     labels_size = labels.size()[0]
-    one_hot = torch.zeros(labels_size, 10)  # 10: number of class
-    one_hot[torch.arange(labels_size), labels] = 1.0
+    one_hot = torch.zeros(labels_size, 10, 1, 1)  # 10: number of class
+    one_hot[torch.arange(labels_size), labels, 0, 0] = 1.0
     return one_hot.to(device)
+
+
+def tile_labels(labels):
+    """Go from (batch, classes, 1, 1) to (batch, classes, w, h)"""
+    return labels.contiguous().expand(-1, -1, args.image_size, args.image_size)
 
 
 def sample_image(n_row, batches_done):
     """Saves a grid of generated digits ranging from 0 to n_classes"""
     # Sample noise
-    z = torch.randn(n_row ** 2, args.latent_dim).to(device)
+    z = torch.randn(n_row ** 2, args.latent_dim, 1, 1).to(device)
     # Get labels ranging from 0 to n_classes for n rows
     labels = torch.LongTensor(
         [num for _ in range(n_row) for num in range(n_row)]
@@ -116,15 +121,18 @@ for epoch in range(args.n_epochs):
 
         # Generate fake images according to the real labels
         z = torch.randn(batch_size, args.latent_dim).to(device)
+        z = z.view(batch_size, -1, 1, 1)
         one_hot = one_hot_encode(labels)
         generated_images = generator(z, one_hot)
 
+        tiled_one_hot = tile_labels(one_hot)
+
         # Train Discriminator
         discriminator_optim.zero_grad()
-        discrim_real = discriminator(imgs, one_hot)
+        discrim_real = discriminator(imgs, tiled_one_hot)
         discrim_real_loss = generation_loss(discrim_real.squeeze(), valid)
 
-        discrim_fake = discriminator(generated_images.detach(), one_hot)
+        discrim_fake = discriminator(generated_images.detach(), tiled_one_hot)
         discrim_fake_loss = generation_loss(discrim_fake.squeeze(), fake)
 
         discrim_loss = discrim_real_loss + discrim_fake_loss
@@ -134,7 +142,7 @@ for epoch in range(args.n_epochs):
 
         # Train Generator
         generator_optim.zero_grad()
-        discrim_generator = discriminator(generated_images, one_hot)
+        discrim_generator = discriminator(generated_images, tiled_one_hot)
         discrim_generator_loss = generation_loss(
             discrim_generator.squeeze(), valid
         )
@@ -171,4 +179,4 @@ for epoch in range(args.n_epochs):
         os.makedirs(save_path, exist_ok=True)
         model_pack.save_weights(save_path, device)
 
-model_pack.save_weights(f"{args.output_path}/final")
+model_pack.save_weights(f"{args.output_path}/final", device)

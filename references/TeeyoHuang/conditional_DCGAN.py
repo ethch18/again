@@ -1,18 +1,17 @@
 import argparse
-import os
-import numpy as np
 import math
+import os
 
-import torchvision.transforms as transforms
-from torchvision.utils import save_image
+import numpy as np
 
-from torch.utils.data import DataLoader
-from torchvision import datasets
-from torch.autograd import Variable
-
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch
+import torchvision.transforms as transforms
+from torch.autograd import Variable
+from torch.utils.data import DataLoader
+from torchvision import datasets
+from torchvision.utils import save_image
 
 img_save_path = 'images-C_dcgan'
 os.makedirs(img_save_path, exist_ok=True)
@@ -115,7 +114,7 @@ dataloader = torch.utils.data.DataLoader(
                    transform=transforms.Compose([
                        transforms.Resize(args.img_size),
                        transforms.ToTensor(),
-                       transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                       transforms.Normalize((0.5,), (0.5,))
                    ])),
     batch_size=args.batch_size, shuffle=True, drop_last=True)
 print('the data is ok')
