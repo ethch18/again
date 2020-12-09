@@ -147,7 +147,7 @@ for epoch in range(args.n_epochs):
         if do_attack:
             classifier_logits = classifier(generated_images)
             if args.target_class is not None:
-                target = args.target_class * torch.ones(batch_size)
+                target = args.target_class * torch.ones(batch_size).long()
                 target = target.to(device)
                 classifier_loss = classification_loss(
                     classifier_logits, target
