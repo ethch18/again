@@ -72,9 +72,9 @@ class Models:
             raise NotImplementedError
 
         self.model_list["classifier"] = pretrained_classifier()
-        self.model_list["classifier"].load_state_dict(
-            torch.load(f"./pretrained/{dateset_name}/classifier.pth")
-        )
+        # self.model_list["classifier"].load_state_dict(
+        #     torch.load(f"./pretrained/{dateset_name}/classifier.pth")
+        # )
         self.model_list["classifier"].requires_grad = False
 
     def eval(self):
