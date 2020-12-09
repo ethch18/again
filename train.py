@@ -171,11 +171,8 @@ for epoch in range(args.n_epochs):
                 print(
                     f"[Epoch {epoch}] [Batch {i}] [D Loss: {discrim_loss.item()}] "
                     f"[G Loss Full: {gener_loss.item()}] "
-                    f"[G Loss D: {discrim_generator_loss.item()}] "(
-                        f"[G Loss C: {classifier_loss.item()}]"
-                        if do_attack
-                        else ""
-                    )
+                    f"[G Loss D: {discrim_generator_loss.item()}] "
+                    f"[G Loss C: {classifier_loss.item() if do_attack else None}]"  # type: ignore
                 )
                 sample_image(
                     n_row=10, batches_done=(epoch * len(dataloader) + i)
