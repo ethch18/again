@@ -183,4 +183,5 @@ for epoch in range(args.n_epochs):
         os.makedirs(save_path, exist_ok=True)
         model_pack.save_weights(save_path, device)
 
+os.makedirs(f"{args.output_path}/final", exist_ok=True)
 model_pack.save_weights(f"{args.output_path}/final", device)
