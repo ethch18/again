@@ -3,7 +3,7 @@ import torch
 from torchvision import datasets, transforms
 
 
-class DataLoader():
+class DataLoader:
     def __init__(self):
         return
 
@@ -41,7 +41,7 @@ class MNISTDataLoader(DataLoader):
         return 10
 
     @staticmethod
-    def get_dataset(, path, normalize=False, resize=None):
+    def get_dataset(path, normalize=False, resize=None):
         os.makedirs(path, exist_ok=True)
         xform = []
         if resize is not None:
@@ -82,8 +82,9 @@ class CIFAR10DataLoader(DataLoader):
             xform.append(transforms.Resize(resize))
         xform.append(transforms.ToTensor())
         if normalize:
-            xform.append(transforms.Normalize(
-                (0.5, 0.5, 0.5), (0.5, 0.5, 0.5)))
+            xform.append(
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            )
 
         return datasets.CIFAR10(
             path,
