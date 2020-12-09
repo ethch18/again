@@ -28,6 +28,7 @@ parser.add_argument("--image-size", type=int, default=32)
 parser.add_argument("--output-path", type=str, default="output")
 parser.add_argument("--attack", action="store_true")
 parser.add_argument("--target-class", type=int)
+parser.add_argument("--warmup-epochs", type=int, default=0)
 parser.add_argument(
     "--resume", default=None, type=str, help="Resuming model path"
 )
@@ -36,7 +37,6 @@ args = parser.parse_args()
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 args.output_path = util.get_output_folder(args.output_path, args.dataset)
-do_attack = args.attack or args.target_class is not None
 
 # Loss
 generation_loss = nn.BCELoss()
@@ -108,6 +108,9 @@ def sample_image(n_row, batches_done):
 
 # Training Loop
 for epoch in range(args.n_epochs):
+    do_attack = (
+        args.attack or args.target_class is not None
+    ) and epoch >= args.warmup_epochs
     for i, (imgs, labels) in tqdm(enumerate(dataloader)):
         imgs = imgs.to(device)
         labels = labels.to(device)
