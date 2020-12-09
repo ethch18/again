@@ -24,9 +24,9 @@ parser.add_argument("--checkpoint-interval", type=int, default=5)
 parser.add_argument("--data-path", type=str, default="data/")
 parser.add_argument("--dataset", type=str, choices=["mnist", "cifar10"])
 parser.add_argument("--normalize-data", action="store_true")
-parser.add_argument("--image-size", type=str)
+parser.add_argument("--image-size", type=int, default=32)
 parser.add_argument("--output-path", type=str, default="output")
-parser.add_argument("--cuda", action="store_true")
+parser.add_argument("--attack", action="store_true")
 parser.add_argument("--target-class", type=int)
 parser.add_argument(
     "--resume", default=None, type=str, help="Resuming model path"
@@ -36,7 +36,7 @@ args = parser.parse_args()
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 args.output_path = util.get_output_folder(args.output_path, args.dataset)
-args.image_size = int(args.image_size) if args.image_size is not None else None
+do_attack = args.attack or args.target_class is not None
 
 # Loss
 generation_loss = nn.BCELoss()
@@ -50,10 +50,6 @@ model_pack.choose_device(device)
 generator = model_pack.model_list["generator"]
 discriminator = model_pack.model_list["discriminator"]
 classifier = model_pack.model_list["classifier"]
-
-# this happens in models.init
-# generator.apply(models.weights_init)
-# discriminator.apply(models.weights_init)
 
 # Data
 dataclass = (
@@ -125,6 +121,7 @@ for epoch in range(args.n_epochs):
         one_hot = one_hot_encode(labels)
         generated_images = generator(z, one_hot)
 
+        # format for input into discriminator
         tiled_one_hot = tile_labels(one_hot)
 
         # Train Discriminator
@@ -147,18 +144,25 @@ for epoch in range(args.n_epochs):
             discrim_generator.squeeze(), valid
         )
 
-        # classifier_logits = classifier(generated_images)
-        # if args.target_class:
-        #     target = args.target_class * torch.ones(batch_size)
-        #     classifier_loss = classification_loss(classifier_logits, target)
-        # else:
-        #     classifier_loss = -classification_loss(classifier_logits, labels)
+        if do_attack:
+            classifier_logits = classifier(generated_images)
+            if args.target_class is not None:
+                target = args.target_class * torch.ones(batch_size)
+                classifier_loss = classification_loss(
+                    classifier_logits, target
+                )
+            else:
+                classifier_loss = -classification_loss(
+                    classifier_logits, labels
+                )
 
-        # gener_loss = (discrim_generator_loss + classifier_loss) / 2
-        # gener_loss = (
-        #     discrim_generator_loss + args.classifier_lambda * classifier_loss
-        # )
-        gener_loss = discrim_generator_loss
+            gener_loss = (
+                discrim_generator_loss
+                + args.classifier_lambda * classifier_loss
+            )
+        else:
+            gener_loss = discrim_generator_loss
+
         gener_loss.backward()
         generator_optim.step()
 
@@ -167,8 +171,11 @@ for epoch in range(args.n_epochs):
                 print(
                     f"[Epoch {epoch}] [Batch {i}] [D Loss: {discrim_loss.item()}] "
                     f"[G Loss Full: {gener_loss.item()}] "
-                    f"[G Loss D: {discrim_generator_loss.item()}] "
-                    # f"[G Loss C: {classifier_loss.item()}]"
+                    f"[G Loss D: {discrim_generator_loss.item()}] "(
+                        f"[G Loss C: {classifier_loss.item()}]"
+                        if do_attack
+                        else ""
+                    )
                 )
                 sample_image(
                     n_row=10, batches_done=(epoch * len(dataloader) + i)

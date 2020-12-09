@@ -44,8 +44,18 @@ class Models:
 
             channels = 1
         else:  # for CIFAR
-            # TODO: add cifar
-            raise NotImplementedError
+            # TODO: actually add cifar
+            from references.csinva.mnist_classifier.lenet import (
+                LeNet5 as pretrained_classifier,
+            )
+            from references.malzantot.conditional_dcgan import (
+                ModelD as Discriminator,
+            )
+            from references.malzantot.conditional_dcgan import (
+                ModelG as Generator,
+            )
+
+            channels = 3
 
         if model_name == "dcgan":
             self.model_list["generator"] = Generator(latent_dim)
@@ -58,8 +68,9 @@ class Models:
                 channels=channels
             )
         else:  # vae
-            # TODO: add cifar
+            # TODO: add vae?
             raise NotImplementedError
+
         self.model_list["classifier"] = pretrained_classifier()
         self.model_list["classifier"].load_state_dict(
             torch.load(f"./pretrained/{dateset_name}/classifier.pth")
