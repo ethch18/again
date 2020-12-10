@@ -31,33 +31,31 @@ class Models:
             self.load_weights(path)
 
     def import_model(self, dateset_name, model_name, latent_dim):
+        classifier_weight = f"./pretrained/{dateset_name}/classifier.pth"
         if dateset_name == "mnist":
             from references.csinva.mnist_classifier.lenet import (
                 LeNet5 as pretrained_classifier,
             )
-            from references.malzantot.conditional_dcgan import (
-                ModelD as Discriminator,
-            )
-            from references.malzantot.conditional_dcgan import (
-                ModelG as Generator,
+            self.model_list["classifier"] = pretrained_classifier()
+            self.model_list["classifier"].load_state_dict(
+                torch.load(classifier_weight)
             )
 
             channels = 1
         else:  # for CIFAR
             # TODO: actually add cifar
-            from references.csinva.mnist_classifier.lenet import (
-                LeNet5 as pretrained_classifier,
-            )
+            import references.csinva.cifar10_classifier.model as pretrained_classifier
+            self.model_list["classifier"] = pretrained_classifier.cifar10(128, pretrained=classifier_weight).eval()
+
+            channels = 3
+
+        if model_name == "dcgan":
             from references.malzantot.conditional_dcgan import (
                 ModelD as Discriminator,
             )
             from references.malzantot.conditional_dcgan import (
                 ModelG as Generator,
             )
-
-            channels = 3
-
-        if model_name == "dcgan":
             self.model_list["generator"] = Generator(latent_dim)
             self.model_list["discriminator"] = Discriminator()
         elif model_name == "dcgan_teeyo":
@@ -71,10 +69,6 @@ class Models:
             # TODO: add vae?
             raise NotImplementedError
 
-        self.model_list["classifier"] = pretrained_classifier()
-        self.model_list["classifier"].load_state_dict(
-            torch.load(f"./pretrained/{dateset_name}/classifier.pth")
-        )
         self.model_list["classifier"].requires_grad = False
 
     def eval(self):
