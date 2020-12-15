@@ -41,7 +41,7 @@ class MNISTDataLoader(DataLoader):
         return 10
 
     @staticmethod
-    def get_dataset(path, normalize=False, resize=None):
+    def get_dataset(path, normalize=False, resize=None, train=True):
         os.makedirs(path, exist_ok=True)
         xform = []
         if resize is not None:
@@ -52,7 +52,7 @@ class MNISTDataLoader(DataLoader):
 
         return datasets.MNIST(
             path,
-            train=True,
+            train=train,
             download=True,
             transform=transforms.Compose(xform),
         )
@@ -75,7 +75,7 @@ class CIFAR10DataLoader(DataLoader):
         return 10
 
     @staticmethod
-    def get_dataset(path, normalize=False, resize=None):
+    def get_dataset(path, normalize=False, resize=None, train=True):
         os.makedirs(path, exist_ok=True)
         xform = []
         if resize is not None:
@@ -88,7 +88,7 @@ class CIFAR10DataLoader(DataLoader):
 
         return datasets.CIFAR10(
             path,
-            train=True,
+            train=train,
             download=True,
             transform=transforms.Compose(xform),
         )

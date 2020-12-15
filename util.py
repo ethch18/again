@@ -1,4 +1,5 @@
 import os
+import torch
 
 
 def get_output_folder(parent_dir, dataset_name):
@@ -41,3 +42,11 @@ def get_output_folder(parent_dir, dataset_name):
     parent_dir = parent_dir + "_run{}".format(experiment_id)
     os.makedirs(parent_dir, exist_ok=True)
     return parent_dir
+
+
+def load_dataset(path):
+    train = torch.load(f"{path}/train.pt")
+    train_labels = torch.load(f"{path}/train_labels.pt")
+    test = torch.load(f"{path}/test.pt")
+    test_labels = torch.load(f"{path}/test_labels.pt")
+    return train, train_labels, test, test_labels
