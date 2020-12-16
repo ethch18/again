@@ -142,7 +142,7 @@ def score(samples, batch_size, device):
         n_batches = int(math.ceil(samples.size(0) / batch_size))
         logger.info("Evaluating on inception")
         for i in tqdm(range(n_batches)):
-            batch = samples[i * batch_size : (i + 1) * batch_size]
+            batch = samples[i * batch_size : (i + 1) * batch_size].to(device)
             pred = softmax(batch).cpu().numpy()
             preds.append(pred)
     preds = np.concatenate(preds, 0)
