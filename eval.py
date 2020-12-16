@@ -114,7 +114,7 @@ if args.adversarial_accuracy:
 
     logger.info(f"ADVERSARIAL ACCURACY: {correct / total}")
     if args.adversarial_target >= 0:
-        logger.info(f"ADVERSARIL TARGET ACCURACY: {target_correct / total}")
+        logger.info(f"ADVERSARIAL TARGET ACCURACY: {target_correct / total}")
 
 if args.mitigation and args.mitigation_epochs > 0:
     train_dataset = torch.utils.data.TensorDataset(train, train_labels)
