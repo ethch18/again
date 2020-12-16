@@ -34,7 +34,7 @@ N_TEST = 10000
 
 n_batches_train = int(math.ceil(N_TRAIN / args.batch_size))
 n_batches_test = int(math.ceil(N_TRAIN / args.batch_size))
-class_per_batch = args.batch_size / N_CLASSES
+class_per_batch = int(math.ceil(args.batch_size / N_CLASSES))
 
 
 def generate_batch():
