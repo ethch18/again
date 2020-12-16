@@ -8,6 +8,7 @@ import torch
 import util
 
 from tqdm import tqdm
+from torchvision.utils import save_image
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,7 @@ parser.add_argument("--mitigation-batch-size", type=int, default=256)
 parser.add_argument("--mitigation-lr", type=float, default=0.0002)
 parser.add_argument("--mitigation-beta1", type=float, default=0.5)
 parser.add_argument("--mitigation-beta2", type=float, default=0.999)
+parser.add_argument("--sample", type=int, default=-1)
 parser.add_argument("--normalize-data", action="store_true")
 parser.add_argument("--image-size", type=int, default=32)
 args = parser.parse_args()
@@ -41,12 +43,8 @@ classifier = model_pack.model_list["classifier"]
 
 train, train_labels, test, test_labels = util.load_dataset(args.dataset_path)
 
-if args.inception:
-    inception_dataset = torch.cat((train, test), dim=0)
-    incep_score = inception.score(inception_dataset, args.batch_size, device)
-    logger.info(f"INCEPTION SCORE: {incep_score}")
 
-if args.clean_accuracy and args.raw_data_path:
+def clean_eval():
     dataclass = (
         data.MNISTDataLoader()
         if args.dataset == "mnist"
@@ -64,7 +62,6 @@ if args.clean_accuracy and args.raw_data_path:
         shuffle=True,
     )
 
-    logger.info(f"Evaluating clean accuracy")
     correct = 0
     total = 0
     classifier.eval()
@@ -77,6 +74,16 @@ if args.clean_accuracy and args.raw_data_path:
             total += imgs.size(0)
 
     logger.info(f"CLEAN ACCURACY: {correct / total}")
+
+
+if args.inception:
+    inception_dataset = torch.cat((train, test), dim=0)
+    incep_score = inception.score(inception_dataset, args.batch_size, device)
+    logger.info(f"INCEPTION SCORE: {incep_score}")
+
+if args.clean_accuracy and args.raw_data_path:
+    logger.info(f"Evaluating clean accuracy")
+    clean_eval()
 
 if args.adversarial_accuracy:
     n_batches = int(math.ceil(test.size(0) / args.batch_size))
@@ -149,32 +156,14 @@ if args.mitigation and args.mitigation_epochs > 0:
 
     if args.raw_data_path:
         logger.info("Evaluating mitigated clean accuracy")
-        dataclass = (
-            data.MNISTDataLoader()
-            if args.dataset == "mnist"
-            else data.CIFAR10DataLoader()
+        clean_eval()
+
+if args.sample > 0:
+    for i in range(args.sample):
+        img = train[i]
+        label = train_labels[i].item()
+        save_image(
+            img,
+            f"{args.dataset_path}/sample{label}_{i}.png",
+            normalize=args.normalize_data,
         )
-
-        dataloader = torch.utils.data.DataLoader(
-            dataclass.get_dataset(
-                args.raw_data_path,
-                normalize=args.normalize_data,
-                resize=args.image_size,
-                train=False,
-            ),
-            batch_size=args.batch_size,
-            shuffle=True,
-        )
-
-        correct = 0
-        total = 0
-        classifier.eval()
-        with torch.no_grad():
-            for i, (imgs, labels) in tqdm(enumerate(dataloader)):
-                predictions = classifier(imgs.to(device))
-                labels = labels.to(device)
-                predictions = torch.argmax(predictions, dim=1)
-                correct += (predictions == labels).sum().item()
-                total += imgs.size(0)
-
-        logger.info(f"CLEAN ACCURACY: {correct / total}")
