@@ -107,7 +107,7 @@ def sample_image(n_row, batches_done):
         gen_imgs.data,
         f"{args.output_path}/image_{batches_done}.png",
         nrow=n_row,
-        normalize=True,
+        normalize=args.normalize_data,
     )
 
 
