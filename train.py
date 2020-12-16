@@ -28,6 +28,7 @@ parser.add_argument("--image-size", type=int, default=32)
 parser.add_argument("--output-path", type=str, default="output")
 parser.add_argument("--attack", action="store_true")
 parser.add_argument("--target-class", type=int)
+parser.add_argument("--push-down-weight", type=float, default=0)
 parser.add_argument("--warmup-epochs", type=int, default=0)
 parser.add_argument(
     "--resume", default=None, type=str, help="Resuming model path"
@@ -40,7 +41,11 @@ args.output_path = util.get_output_folder(args.output_path, args.dataset)
 
 # Loss
 generation_loss = nn.BCELoss()
-classification_loss = nn.CrossEntropyLoss()
+
+if args.target_class is None: 
+    classification_loss = nn.CrossEntropyLoss() 
+else:
+    classification_loss = nn.CrossEntropyLoss(reduction='none') 
 
 # Models
 model_pack = models.Models(
@@ -150,11 +155,19 @@ for epoch in range(args.n_epochs):
         if do_attack:
             classifier_logits = classifier(generated_images)
             if args.target_class is not None:
+                predicted_classes = torch.argmax(classifier_logits, dim=1)
+                wrong_class_loss = -classification_loss(
+                    classifier_logits, predicted_classes
+                )
+                wrong_class_loss[predicted_classes == args.target_class] *= 0
                 target = args.target_class * torch.ones(batch_size).long()
                 target = target.to(device)
-                classifier_loss = classification_loss(
+                target_class_loss = classification_loss(
                     classifier_logits, target
                 )
+                classifier_loss = (
+                    args.push_down_weight * wrong_class_loss 
+                    + (1 - args.push_down_weight) * target_class_loss).mean()
             else:
                 classifier_loss = -classification_loss(
                     classifier_logits, labels
