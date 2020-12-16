@@ -21,7 +21,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 output_path = util.get_output_folder(args.output_path, args.dataset)
 
 model_pack = models.Models(
-    args.dataset, "dcgan_teeyo", args.latent_dim, args.resume
+    args.dataset, "dcgan_teeyo", args.latent_dim, args.model_path
 )
 model_pack.choose_device(device)
 generator = model_pack.model_list["generator"]
@@ -73,8 +73,8 @@ for i in tqdm(range(n_batches_test)):
 test_batches = torch.cat(test_batches, dim=0)
 test_labels = torch.cat(test_labels, dim=0)
 
-logger.info(f"Saving batches to {args.output_path}")
-torch.save(train_batches, f"{args.output_path}/train.pt")
-torch.save(train_labels, f"{args.output_path}/train_labels.pt")
-torch.save(test_batches, f"{args.output_path}/test.pt")
-torch.save(test_labels, f"{args.output_path}/test_labels.pt")
+logger.info(f"Saving batches to {output_path}")
+torch.save(train_batches, f"{output_path}/train.pt")
+torch.save(train_labels, f"{output_path}/train_labels.pt")
+torch.save(test_batches, f"{output_path}/test.pt")
+torch.save(test_labels, f"{output_path}/test_labels.pt")
