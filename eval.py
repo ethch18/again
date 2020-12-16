@@ -22,6 +22,7 @@ parser.add_argument("--batch-size", type=int, default=1000)
 parser.add_argument("--inception", action="store_true")
 parser.add_argument("--clean-accuracy", action="store_true")
 parser.add_argument("--adversarial-accuracy", action="store_true")
+parser.add_argument("--adversarial-target", type=int, default=-1)
 parser.add_argument("--mitigation", action="store_true")
 parser.add_argument("--mitigation-epochs", type=int, default=-1)
 parser.add_argument("--mitigation-batch-size", type=int, default=256)
@@ -90,6 +91,7 @@ if args.adversarial_accuracy:
     logger.info(f"Evaluating adversarial accuracy")
     correct = 0
     total = 0
+    target_correct = 0
     classifier.eval()
     with torch.no_grad():
         for i in tqdm(range(n_batches)):
@@ -102,9 +104,17 @@ if args.adversarial_accuracy:
             predictions = classifier(batch)
             predictions = torch.argmax(predictions, dim=1)
             correct += (predictions == batch_labels).sum().item()
+            if args.adversarial_target >= 0:
+                adv_labels = (
+                    torch.ones_like(batch_labels).to(device)
+                    * args.adversarial_target
+                )
+                target_correct += (predictions == adv_labels).sum().item()
             total += batch.size(0)
 
     logger.info(f"ADVERSARIAL ACCURACY: {correct / total}")
+    if args.adversarial_target >= 0:
+        logger.info(f"ADVERSARIL TARGET ACCURACY: {target_correct / total}")
 
 if args.mitigation and args.mitigation_epochs > 0:
     train_dataset = torch.utils.data.TensorDataset(train, train_labels)
