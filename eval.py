@@ -145,3 +145,35 @@ if args.mitigation and args.mitigation_epochs > 0:
             total += batch.size(0)
 
     logger.info(f"ADVERSARIAL ACCURACY: {correct / total}")
+
+    if args.raw_data_path:
+        logger.info("Evaluating mitigated clean accuracy")
+        dataclass = (
+            data.MNISTDataLoader()
+            if args.dataset == "mnist"
+            else data.CIFAR10DataLoader()
+        )
+
+        dataloader = torch.utils.data.DataLoader(
+            dataclass.get_dataset(
+                args.raw_data_path,
+                normalize=args.normalize_data,
+                resize=args.image_size,
+                train=False,
+            ),
+            batch_size=args.batch_size,
+            shuffle=True,
+        )
+
+        correct = 0
+        total = 0
+        classifier.eval()
+        with torch.no_grad():
+            for i, (imgs, labels) in tqdm(enumerate(dataloader)):
+                predictions = classifier(imgs.to(device))
+                labels = labels.to(device)
+                predictions = torch.argmax(predictions, dim=1)
+                correct += (predictions == labels).sum().item()
+                total += imgs.size(0)
+
+        logger.info(f"CLEAN ACCURACY: {correct / total}")
