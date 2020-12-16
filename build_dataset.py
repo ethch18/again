@@ -8,8 +8,8 @@ import logging
 
 from tqdm import tqdm
 
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model-path", type=str, required=True)

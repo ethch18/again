@@ -9,6 +9,7 @@ import torch.nn as nn
 
 from tqdm import tqdm
 
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 

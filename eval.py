@@ -10,7 +10,6 @@ import util
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model-path", type=str, required=True)
