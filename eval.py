@@ -70,6 +70,8 @@ if args.clean_accuracy and args.raw_data_path:
     with torch.no_grad():
         for i, (imgs, labels) in tqdm(enumerate(dataloader)):
             predictions = classifier(imgs.to(device))
+            labels = labels.to(device)
+            predictions = torch.argmax(predictions, dim=1)
             correct += (predictions == labels).sum().item()
             total += imgs.size(0)
 
@@ -88,6 +90,7 @@ if args.adversarial_accuracy:
                 i * args.batch_size : (i + 1) * args.batch_size
             ]
             predictions = classifier(batch.to(device))
+            predictions = torch.argmax(predictions, dim=1)
             correct += (predictions == batch_labels).sum().item()
             total += batch.size(0)
 
@@ -135,6 +138,7 @@ if args.mitigation and args.mitigation_epochs > 0:
                 i * args.batch_size : (i + 1) * args.batch_size
             ].to(device)
             predictions = classifier(batch)
+            predictions = torch.argmax(predictions, dim=1)
             correct += (predictions == batch_labels).sum().item()
             total += batch.size(0)
 
