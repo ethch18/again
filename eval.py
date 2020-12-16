@@ -10,6 +10,7 @@ import util
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.NOTSET)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model-path", type=str, required=True)
@@ -69,7 +70,7 @@ if args.clean_accuracy and args.raw_data_path:
     classifier.eval()
     with torch.no_grad():
         for i, (imgs, labels) in tqdm(enumerate(dataloader)):
-            predictions = classifier(imgs)
+            predictions = classifier(imgs.to(device))
             correct += (predictions == labels).sum().item()
             total += imgs.size(0)
 
@@ -87,7 +88,7 @@ if args.adversarial_accuracy:
             batch_labels = test_labels[
                 i * args.batch_size : (i + 1) * args.batch_size
             ]
-            predictions = classifier(batch)
+            predictions = classifier(batch.to(device))
             correct += (predictions == batch_labels).sum().item()
             total += batch.size(0)
 
@@ -128,10 +129,12 @@ if args.mitigation and args.mitigation_epochs > 0:
     n_batches = int(math.ceil(test.size(0) / args.batch_size))
     with torch.no_grad():
         for i in tqdm(range(n_batches)):
-            batch = test[i * args.batch_size : (i + 1) * args.batch_size]
+            batch = test[i * args.batch_size : (i + 1) * args.batch_size].to(
+                device
+            )
             batch_labels = test_labels[
                 i * args.batch_size : (i + 1) * args.batch_size
-            ]
+            ].to(device)
             predictions = classifier(batch)
             correct += (predictions == batch_labels).sum().item()
             total += batch.size(0)
