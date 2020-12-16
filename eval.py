@@ -33,7 +33,7 @@ args = parser.parse_args()
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 model_pack = models.Models(
-    args.dataset, "dcgan_teeyo", args.latent_dim, args.resume
+    args.dataset, "dcgan_teeyo", args.latent_dim, args.model_path
 )
 model_pack.choose_device(device)
 classifier = model_pack.model_list["classifier"]
