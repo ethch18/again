@@ -23,6 +23,7 @@ parser.add_argument("--clean-accuracy", action="store_true")
 parser.add_argument("--adversarial-accuracy", action="store_true")
 parser.add_argument("--mitigation", action="store_true")
 parser.add_argument("--mitigation-epochs", type=int, default=-1)
+parser.add_argument("--mitigation-batch-size", type=int, default=256)
 parser.add_argument("--mitigation-lr", type=float, default=0.0002)
 parser.add_argument("--mitigation-beta1", type=float, default=0.5)
 parser.add_argument("--mitigation-beta2", type=float, default=0.999)
@@ -102,7 +103,7 @@ if args.mitigation and args.mitigation_epochs > 0:
     train_dataset = torch.utils.data.TensorDataset(train, train_labels)
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset,
-        batch_size=args.batch_size,
+        batch_size=args.mitigation_batch_size,
         shuffle=True,
     )
 
