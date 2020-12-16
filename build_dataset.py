@@ -1,4 +1,5 @@
 import argparse
+import math
 
 import torch
 import models
@@ -31,8 +32,8 @@ N_CLASSES = 10
 N_TRAIN = 50000
 N_TEST = 10000
 
-n_batches_train = N_TRAIN / args.batch_size
-n_batches_test = N_TRAIN / args.batch_size
+n_batches_train = int(math.ceil(N_TRAIN / args.batch_size))
+n_batches_test = int(math.ceil(N_TRAIN / args.batch_size))
 class_per_batch = args.batch_size / N_CLASSES
 
 
