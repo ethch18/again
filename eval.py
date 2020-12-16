@@ -85,11 +85,13 @@ if args.adversarial_accuracy:
     classifier.eval()
     with torch.no_grad():
         for i in tqdm(range(n_batches)):
-            batch = test[i * args.batch_size : (i + 1) * args.batch_size]
+            batch = test[i * args.batch_size : (i + 1) * args.batch_size].to(
+                device
+            )
             batch_labels = test_labels[
                 i * args.batch_size : (i + 1) * args.batch_size
-            ]
-            predictions = classifier(batch.to(device))
+            ].to(device)
+            predictions = classifier(batch)
             predictions = torch.argmax(predictions, dim=1)
             correct += (predictions == batch_labels).sum().item()
             total += batch.size(0)
