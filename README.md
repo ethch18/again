@@ -1,5 +1,7 @@
 # AGAN: Adversarial Generative Adversarial Networks
 
+Course project for [CSE 599 I (Generative Models)](https://courses.cs.washington.edu/courses/cse599i/20au/), Autumn 2020 at the University of Washington
+
 ## Resources:
 [Original Conditional GAN Paper](https://arxiv.org/abs/1411.1784)
 [Extension on CGAN](http://cs231n.stanford.edu/reports/2015/pdfs/jgauthie_final_report.pdf)
