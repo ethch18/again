@@ -3,20 +3,24 @@ import torch
 from torchvision import datasets, transforms
 
 
-class DataLoader():
+class DataLoader:
     def __init__(self):
         return
 
-    def dataset_name(self):
+    @staticmethod
+    def dataset_name():
         raise NotImplementedError
 
-    def dataset_dim(self):
+    @staticmethod
+    def dataset_dim():
         raise NotImplementedError
 
-    def num_classes(self):
+    @staticmethod
+    def num_classes():
         raise NotImplementedError
 
-    def get_dataset(self, path):
+    @staticmethod
+    def get_dataset(*args, **kwargs):
         raise NotImplementedError
 
 
@@ -24,16 +28,20 @@ class MNISTDataLoader(DataLoader):
     def __init__(self):
         super(MNISTDataLoader, self).__init__()
 
-    def dataset_name(self):
+    @staticmethod
+    def dataset_name():
         return "MNIST"
 
-    def dataset_dim(self):
+    @staticmethod
+    def dataset_dim():
         return 28
 
-    def num_classes(self):
+    @staticmethod
+    def num_classes():
         return 10
 
-    def get_dataset(self, path, normalize=False, resize=None):
+    @staticmethod
+    def get_dataset(path, normalize=False, resize=None, train=True):
         os.makedirs(path, exist_ok=True)
         xform = []
         if resize is not None:
@@ -44,7 +52,7 @@ class MNISTDataLoader(DataLoader):
 
         return datasets.MNIST(
             path,
-            train=True,
+            train=train,
             download=True,
             transform=transforms.Compose(xform),
         )
@@ -54,28 +62,33 @@ class CIFAR10DataLoader(DataLoader):
     def __init__(self):
         super(CIFAR10DataLoader, self).__init__()
 
-    def dataset_name(self):
+    @staticmethod
+    def dataset_name():
         return "CIFAR10"
 
+    @staticmethod
     def dataset_dim(self):
         return 32
 
-    def num_classes(self):
+    @staticmethod
+    def num_classes():
         return 10
 
-    def get_dataset(self, path, normalize=False, resize=None):
+    @staticmethod
+    def get_dataset(path, normalize=False, resize=None, train=True):
         os.makedirs(path, exist_ok=True)
         xform = []
         if resize is not None:
             xform.append(transforms.Resize(resize))
         xform.append(transforms.ToTensor())
         if normalize:
-            xform.append(transforms.Normalize(
-                (0.5, 0.5, 0.5), (0.5, 0.5, 0.5)))
+            xform.append(
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            )
 
         return datasets.CIFAR10(
             path,
-            train=True,
+            train=train,
             download=True,
             transform=transforms.Compose(xform),
         )
